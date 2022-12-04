@@ -18,7 +18,6 @@ void ArnoldiProjectionMGS(int m, double* V, mat* A, double* H){
 
         MatVecProd(A, &V[j*(A->nb_ligne)], &V[(j+1)*(A->nb_ligne)]);
 
-        //On commence par z_j = A_ij.v_j
     	for (int i = 0; i < j+1; i++) {
 
             H[i*m+j] = DotProduct(&V[(j+1)*(A->nb_ligne)], &V[i*(A->nb_ligne)], A->nb_ligne);
@@ -44,28 +43,29 @@ void ArnoldiProjectionMGS(int m, double* V, mat* A, double* H){
 
 
 void ERAM(int n, int m, double* v0, mat* A){
+
     double *Vm = calloc(n*(m+1),sizeof(double));
     double *H = calloc((m+1)*m,sizeof(double));
 
-
-    // Initialisation
-    // Vecteur des valeurs propres
+    // Vecteur propres
     double *wr = malloc(m*sizeof(double));
     double *wi = malloc(m*sizeof(double));
-    // matrices des vecteurs propres
+    // Matrices associées aux vecteurs propres
     double *vr = malloc(m*m*sizeof(double));
-    // vecteurs propres approxi
+    // Vecteurs propres calculés
     double *u = calloc(n*m,sizeof(double));
-    // residu
-    double *p = malloc(m*sizeof(double));
-    double residu;
+    // Erreur
+    double *rho = malloc(m*sizeof(double));
+    double ritz;
+
     double* VmT;
     double* uT;
+
     lapack_int info;
 
-    int converged = 0, max_iterations = 1, iteration_counter = 0;
+    int converged = 0, max_it = 1, nb_it = 0;
 
-    while(converged == 0 && iteration_counter < max_iterations){
+    while(converged == 0 && nb_it < max_it){
         memcpy(Vm, v0, n * sizeof(double));
 
         // Apply Arnoldi Projection
@@ -75,8 +75,8 @@ void ERAM(int n, int m, double* v0, mat* A){
 
         info = LAPACKE_dgeev(LAPACK_ROW_MAJOR,'N','V', m, H, m, wr, wi, NULL, m, vr, m);
         if(info != 0){
-            if(info < 0) { printf("the %d-th argument had an illegal value.", info); }
-            else { printf("the QR algorithm failed to compute all the eigenvalues, and no eigenvectors have been computed; elements %d:%d of WR and WI contain eigenvalues which have converged.", info, n); }
+            if(info < 0) { printf("the %d-th argument had a wrong value.", info); }
+            else { printf("the QR algorithm failed to compute all the eigenvalues; elements %d:%d of WR and WI contain eigenvalues which have converged.", info, n); }
         }
 
 
@@ -89,12 +89,12 @@ void ERAM(int n, int m, double* v0, mat* A){
         // Calcul des residu
         for (size_t i = 0; i < m; i++)
         {
-            p[i] = vr[(m-1)*m+i] * H[m*m+m-1];
-            residu += abs(p[i]);
+            rho[i] = vr[(m-1)*m+i] * H[m*m+m-1];
+            ritz += abs(rho[i]);
         }
 
         // Test de convergence
-        if(residu <= eps){
+        if(ritz <= eps){
             converged = 1;
         }else{
             uT =  transpose(n, m, u);
@@ -112,9 +112,9 @@ void ERAM(int n, int m, double* v0, mat* A){
             memset(Vm, 0,  n*(m+1) * sizeof(double));
             memset(H, 0,  m*(m+1) * sizeof(double));
             memset(u, 0,  m*n * sizeof(double));
-            residu = 0;
+            ritz = 0;
         }
-        iteration_counter += 1;
+        nb_it += 1;
     }
 
     free(H);
@@ -164,3 +164,4 @@ int main(int argc, char **argv) {
 	//FreeMatrice(m);
     return 0;
 }
+

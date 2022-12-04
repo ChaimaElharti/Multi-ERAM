@@ -1,7 +1,7 @@
 #include "usefulFunctions.h"
 
 
-// • La réduction de degré m d’Arnoldi d’une matrice de taille n : 
+// Réduction de degré m d’Arnoldi d’une matrice de taille n 
 void ArnoldiProjectionMGS(int m, double* V, mat* A, double* H){
 
     double* z = (double*)malloc(A->nb_ligne * sizeof(double));
@@ -68,7 +68,6 @@ void ERAM(int n, int m, double* v0, mat* A){
     while(converged == 0 && nb_it < max_it){
         memcpy(Vm, v0, n * sizeof(double));
 
-        // Apply Arnoldi Projection
         ArnoldiProjectionMGS(m, Vm, A, H);
 
         // Calcul Valeurs/Vecteurs propres du sous espace H(m,m)
@@ -86,7 +85,7 @@ void ERAM(int n, int m, double* v0, mat* A){
         VmT = transpose(m, n, Vm);
         MatMatprod(VmT, vr, n, m, m, u);
 
-        // Calcul des residu
+        // Calcul des coefficients de Ritz
         for (size_t i = 0; i < m; i++)
         {
             rho[i] = vr[(m-1)*m+i] * H[m*m+m-1];
